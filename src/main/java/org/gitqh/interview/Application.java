@@ -7,7 +7,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.text.ParseException;
 
 /**
  * Created by gitqh on 05/08/2017.
@@ -31,10 +30,8 @@ public class Application {
                 try {
                     read = br.readLine();
                     calculator.evaluate(read);
-                    result = calculator.getValueStack();
-                } catch (IOException e) {
-                    System.out.println("input should not be null");
-                } catch (CalculatorException | ParseException e) {
+                    result = calculator.getValueStackToString();
+                } catch (CalculatorException | IOException e) {
                     System.out.println(e.getMessage());
                 }
                 System.out.println(result);

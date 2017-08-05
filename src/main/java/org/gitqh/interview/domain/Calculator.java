@@ -1,5 +1,6 @@
 package org.gitqh.interview.domain;
 
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.gitqh.interview.exception.CalculatorException;
 import org.gitqh.interview.model.Instruction;
@@ -8,7 +9,6 @@ import org.gitqh.interview.util.DoubleUtil;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
-import java.text.ParseException;
 import java.util.Stack;
 
 /**
@@ -16,6 +16,7 @@ import java.util.Stack;
  */
 public class Calculator {
 
+    @Getter
     private Stack<Double> valueStack = new Stack<>();
     private Stack<Instruction> instructionStack = new Stack<>();
     private boolean undoFlag = false;
@@ -25,12 +26,10 @@ public class Calculator {
      *
      * @param input                     valid RPN expression
      * @throws CalculatorException      CalculatorException
-     * @throws NullPointerException     NullPointerException
-     * @throws ParseException           ParseException
      */
-    public void evaluate(String input) throws CalculatorException, NullPointerException, ParseException {
+    public void evaluate(String input) throws CalculatorException {
         if (StringUtils.isBlank(input)) {
-            throw new NullPointerException("input could not be null");
+            throw new CalculatorException("input could not be null");
         }
         int currentTokenIndex = 0;
         for (String s : input.toLowerCase().split(" ")) {
@@ -39,7 +38,7 @@ public class Calculator {
             if (operator == null) {
                 Double value = DoubleUtil.tryParseDouble(s);
                 if (value == null) {
-                    throw new ParseException("can not parse input", currentTokenIndex);
+                    throw new CalculatorException("can not parse input");
                 } else {
                     valueStack.push(value);
                     if (!undoFlag) {
@@ -58,9 +57,8 @@ public class Calculator {
      * @param operator                 RPN operator
      * @param index                    operator position
      * @throws CalculatorException     CalculatorException
-     * @throws ParseException          ParseException
      */
-    private void process(Operator operator, int index) throws CalculatorException, ParseException {
+    private void process(Operator operator, int index) throws CalculatorException {
         // checking there are enough operand for the operation
         if (operator.getOperandsNumber() > valueStack.size()) {
             throw new CalculatorException(
@@ -105,9 +103,8 @@ public class Calculator {
      * undo the last operation
      *
      * @throws CalculatorException      CalculatorException
-     * @throws ParseException           ParseException
      */
-    private void undoLastInstruction() throws CalculatorException, ParseException {
+    private void undoLastInstruction() throws CalculatorException {
         if (instructionStack.isEmpty()) {
             return;
         }
@@ -119,7 +116,7 @@ public class Calculator {
         }
     }
 
-    public String getValueStack() {
+    public String getValueStackToString() {
         DecimalFormat fmt = new DecimalFormat("0.##########");
         fmt.setRoundingMode(RoundingMode.FLOOR);
         StringBuilder sb = new StringBuilder("stack: ");
@@ -133,11 +130,12 @@ public class Calculator {
         try {
             evaluate(inputExpression);
         } catch (CalculatorException e) {
-            return e.getMessage() + "\n" + getValueStack();
-        } catch (NullPointerException | ParseException e) {
-            return e.getMessage();
+            return e.getMessage() + "\n" + getValueStackToString();
         }
-        return getValueStack();
+        return getValueStackToString();
     }
 
+    public Double getStackItem(int index) {
+        return valueStack.get(index);
+    }
 }

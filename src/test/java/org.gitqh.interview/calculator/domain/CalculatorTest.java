@@ -1,10 +1,13 @@
 package org.gitqh.interview.calculator.domain;
 
 import org.gitqh.interview.domain.Calculator;
+import org.gitqh.interview.exception.CalculatorException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class CalculatorTest {
     private Calculator calculator;
@@ -22,6 +25,7 @@ public class CalculatorTest {
 
     @Test
     public void calculatorTest(){
+
         //<editor-fold desc="basic testing cases">
         Assert.assertTrue("testCase1 failed", "stack: 5 2"
                 .equals(calculator.getCurrentResultWithExpression("5 2")));
@@ -57,11 +61,11 @@ public class CalculatorTest {
         //</editor-fold>
 
         //<editor-fold desc="boundary value testing cases">
-        Assert.assertTrue("testCase9 failed", "input could not be null"
+        Assert.assertTrue("testCase9 failed", "input could not be null\nstack:"
                 .equals(calculator.getCurrentResultWithExpression(null)));
         calculator.clearStacks();
 
-        Assert.assertTrue("testCase10 failed", "input could not be null"
+        Assert.assertTrue("testCase10 failed", "input could not be null\nstack:"
                 .equals(calculator.getCurrentResultWithExpression("")));
         calculator.clearStacks();
 
@@ -84,5 +88,126 @@ public class CalculatorTest {
         calculator.clearStacks();
         //</editor-fold>
 
+    }
+
+    @Test
+    public void testAritmeticOperators() throws Exception {
+        calculator.evaluate("5 2");
+        assertEquals(5, calculator.getValueStack().get(0), 0);
+        assertEquals(2, calculator.getStackItem(1), 0);
+
+        // substraction
+        calculator.evaluate("clear");
+        calculator.evaluate("5 2 -");
+        assertEquals(1, calculator.getValueStack().size());
+        assertEquals(3, calculator.getStackItem(0), 0);
+        calculator.evaluate("3 -");
+        assertEquals(1, calculator.getValueStack().size());
+        assertEquals(0, calculator.getStackItem(0), 0);
+
+        // negative
+        calculator.evaluate("clear");
+        calculator.evaluate("1 2 3 4 5 *");
+        assertEquals(4, calculator.getValueStack().size());
+        calculator.evaluate("clear 3 4 -");
+        assertEquals(1, calculator.getValueStack().size());
+        assertEquals(-1, calculator.getStackItem(0), 0);
+
+        // division
+        calculator.evaluate("clear");
+        calculator.evaluate("7 12 2 /");
+        assertEquals(7, calculator.getStackItem(0), 0);
+        assertEquals(6, calculator.getStackItem(1), 0);
+        calculator.evaluate("*");
+        assertEquals(1, calculator.getValueStack().size());
+        assertEquals(42, calculator.getStackItem(0), 0);
+        calculator.evaluate("4 /");
+        assertEquals(1, calculator.getValueStack().size());
+        assertEquals(10.5, calculator.getStackItem(0), 0);
+
+        //multiplication
+        calculator.evaluate("clear");
+        calculator.evaluate("1 2 3 4 5");
+        calculator.evaluate("* * * *");
+        assertEquals(1, calculator.getValueStack().size());
+        assertEquals(120, calculator.getStackItem(0), 0);
+    }
+
+    @Test
+    public void testSqrt() throws Exception {
+        Calculator calculator = new Calculator();
+        calculator.evaluate("2 sqrt");
+        calculator.evaluate("clear 9 sqrt");
+        assertEquals(1, calculator.getValueStack().size());
+        assertEquals(3, calculator.getStackItem(0), 0);
+    }
+
+    @Test
+    public void testInsuficientParameters() {
+        Calculator calculator = new Calculator();
+        try {
+            calculator.evaluate("1 2 3 * 5 + * * 6 5");
+        } catch (CalculatorException e) {
+            assertEquals("operator * (position: 8): insufficient parameters", e.getMessage());
+        }
+        assertEquals(1, calculator.getValueStack().size());
+        assertEquals(11, calculator.getStackItem(0), 0);
+    }
+
+    @Test
+    public void testUndo() throws Exception {
+        Calculator calculator = new Calculator();
+        calculator.evaluate("5 4 3 2");
+        assertEquals(4, calculator.getValueStack().size());
+        calculator.evaluate("undo undo *");
+        assertEquals(1, calculator.getValueStack().size());
+        assertEquals(20, calculator.getStackItem(0), 0);
+        calculator.evaluate("5 *");
+        assertEquals(1, calculator.getValueStack().size());
+        assertEquals(100, calculator.getStackItem(0), 0);
+        calculator.evaluate("undo");
+        assertEquals(2, calculator.getValueStack().size());
+        assertEquals(20, calculator.getStackItem(0), 0);
+        assertEquals(5, calculator.getStackItem(1), 0);
+        calculator.evaluate("+ undo - undo / undo * undo sqrt undo pow undo");
+        assertEquals(2, calculator.getValueStack().size());
+        assertEquals(20, calculator.getStackItem(0), 0.0000000001);
+        assertEquals(5, calculator.getStackItem(1), 0.0000000001);
+    }
+
+    @Test(expected = CalculatorException.class)
+    public void testOnlyOperators() throws Exception {
+        Calculator calculator = new Calculator();
+        calculator.evaluate("+ +");
+    }
+
+    @Test(expected = CalculatorException.class)
+    public void testInvalidCharacters() throws Exception {
+        Calculator calculator = new Calculator();
+        calculator.evaluate("2 a +");
+    }
+
+    @Test(expected = CalculatorException.class)
+    public void testNoSpaces() throws Exception {
+        Calculator calculator = new Calculator();
+        calculator.evaluate("22+");
+    }
+
+    @Test(expected = CalculatorException.class)
+    public void testNoSpaces2() throws Exception {
+        Calculator calculator = new Calculator();
+        calculator.evaluate("2 2+ 3");
+    }
+
+    @Test(expected = CalculatorException.class)
+    public void testDivideByZero() throws Exception {
+        Calculator calculator = new Calculator();
+        calculator.evaluate("1 0 /");
+    }
+
+    @Test(expected = CalculatorException.class)
+    public void testNullInput() throws Exception {
+        Calculator calculator = new Calculator();
+        calculator.evaluate(null);
     }
 }
