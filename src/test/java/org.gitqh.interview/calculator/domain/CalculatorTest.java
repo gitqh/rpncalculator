@@ -25,7 +25,6 @@ public class CalculatorTest {
 
     @Test
     public void calculatorTest(){
-
         //<editor-fold desc="basic testing cases">
         Assert.assertTrue("testCase1 failed", "stack: 5 2"
                 .equals(calculator.getCurrentResultWithExpression("5 2")));
@@ -135,7 +134,6 @@ public class CalculatorTest {
 
     @Test
     public void sqrtTest() throws Exception {
-        Calculator calculator = new Calculator();
         calculator.evaluate("2 sqrt");
         calculator.evaluate("clear 9 sqrt");
         assertEquals(1, calculator.getValueStack().size());
@@ -144,7 +142,6 @@ public class CalculatorTest {
 
     @Test
     public void insuficientParametersTest() {
-        Calculator calculator = new Calculator();
         try {
             calculator.evaluate("1 2 3 * 5 + * * 6 5");
         } catch (CalculatorException e) {
@@ -156,7 +153,6 @@ public class CalculatorTest {
 
     @Test
     public void undoTest() throws Exception {
-        Calculator calculator = new Calculator();
         calculator.evaluate("5 4 3 2");
         assertEquals(4, calculator.getValueStack().size());
         calculator.evaluate("undo undo *");
@@ -177,37 +173,31 @@ public class CalculatorTest {
 
     @Test(expected = CalculatorException.class)
     public void onlyOperatorsTest() throws Exception {
-        Calculator calculator = new Calculator();
         calculator.evaluate("+ +");
     }
 
     @Test(expected = CalculatorException.class)
     public void invalidCharactersTest() throws Exception {
-        Calculator calculator = new Calculator();
         calculator.evaluate("2 a +");
     }
 
     @Test(expected = CalculatorException.class)
     public void noSpacesTest() throws Exception {
-        Calculator calculator = new Calculator();
         calculator.evaluate("22+");
     }
 
     @Test(expected = CalculatorException.class)
     public void noSpaces2Test() throws Exception {
-        Calculator calculator = new Calculator();
         calculator.evaluate("2 2+ 3");
     }
 
     @Test(expected = CalculatorException.class)
     public void divideByZeroTest() throws Exception {
-        Calculator calculator = new Calculator();
         calculator.evaluate("1 0 /");
     }
 
     @Test(expected = CalculatorException.class)
     public void nullInputTest() throws Exception {
-        Calculator calculator = new Calculator();
         calculator.evaluate(null);
     }
 }
