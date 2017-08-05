@@ -1,14 +1,14 @@
 package org.gitqh.interview.domain;
 
-import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.gitqh.interview.exception.CalculatorException;
-import org.gitqh.interview.operation.Instruction;
+import org.gitqh.interview.model.Instruction;
 import org.gitqh.interview.operation.Operator;
 import org.gitqh.interview.util.DoubleUtil;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.util.Stack;
 
 /**
@@ -16,48 +16,55 @@ import java.util.Stack;
  */
 public class Calculator {
 
-    @Getter
-    private Stack<Double> valueStack = new Stack<Double>();
-    private Stack<Instruction> instructionStack = new Stack<Instruction>();
-    private int currentTokenIndex = 0;
+    private Stack<Double> valueStack = new Stack<>();
+    private Stack<Instruction> instructionStack = new Stack<>();
+    private boolean undoFlag = false;
 
     /**
-     * Processes a RPN string token
+     * Evaluate a RPN expression and pushes the result into the valueStack
      *
-     * @param token           RPN token
-     * @param isUndoOperator  indicates if the operation is an undo operation
-     * @throws CalculatorException
+     * @param input                     valid RPN expression
+     * @throws CalculatorException      CalculatorException
+     * @throws NullPointerException     NullPointerException
+     * @throws ParseException           ParseException
      */
-    private void processToken(String token, boolean isUndoOperator) throws CalculatorException {
-        Double value = DoubleUtil.tryParseDouble(token);
-        if (null == value) {
-            processOperator(token, isUndoOperator);
-        } else {
-            //it's a digit
-            valueStack.push(value);
-            if (!isUndoOperator) {
-                instructionStack.push(null);
+    public void evaluate(String input) throws CalculatorException, NullPointerException, ParseException {
+        if (StringUtils.isBlank(input)) {
+            throw new NullPointerException("input could not be null");
+        }
+        int currentTokenIndex = 0;
+        for (String s : input.toLowerCase().split(" ")) {
+            currentTokenIndex++;
+            Operator operator = Operator.getEnum(s);
+            if (operator == null) {
+                Double value = DoubleUtil.tryParseDouble(s);
+                if (value == null) {
+                    throw new ParseException("can not parse input", currentTokenIndex);
+                } else {
+                    valueStack.push(value);
+                    if (!undoFlag) {
+                        instructionStack.push(null);
+                    }
+                }
+            } else {
+                process(operator, currentTokenIndex);
             }
         }
     }
 
     /**
-     * Executes an operation on the stack
+     * process a RPN operator
      *
-     * @param operatorString        RPN valid operator
-     * @param isUndoOperator  indicates if the operation is an undo operation
-     * @throws CalculatorException
+     * @param operator                 RPN operator
+     * @param index                    operator position
+     * @throws CalculatorException     CalculatorException
+     * @throws ParseException          ParseException
      */
-    private void processOperator(String operatorString, boolean isUndoOperator) throws CalculatorException {
-        // check if there is an empty stack
-        if (valueStack.isEmpty()) {
-            throw new CalculatorException("empty stack");
-        }
-
-        // searching for the operator
-        Operator operator = Operator.getEnum(operatorString);
-        if (null == operator) {
-            throw new CalculatorException("invalid operator");
+    private void process(Operator operator, int index) throws CalculatorException, ParseException {
+        // checking there are enough operand for the operation
+        if (operator.getOperandsNumber() > valueStack.size()) {
+            throw new CalculatorException(
+                    String.format("operator %s (position: %d): insufficient parameters", operator.getSymbol(), index*2-1));
         }
 
         // clear value stack and instructions stack
@@ -68,14 +75,9 @@ public class Calculator {
 
         // undo evaluates the last instruction in stack
         if (Operator.UNDO == operator) {
+            undoFlag = true;
             undoLastInstruction();
             return;
-        }
-
-        // checking there are enough operand for the operation
-        if (operator.getOperandsNumber() > valueStack.size()) {
-            throw new CalculatorException(
-                    String.format("operator %s (position: %d): insufficient parameters", operator, currentTokenIndex));
         }
 
         // getting operands
@@ -84,52 +86,41 @@ public class Calculator {
 
         // calculate
         Double result = operator.calculate(firstOperand, secondOperand);
-        if (null != result) {
+        if (result != null) {
             valueStack.push(result);
-            if (!isUndoOperator) {
-                instructionStack.push(new Instruction(Operator.getEnum(operatorString), firstOperand));
+            if (!undoFlag) {
+                instructionStack.push(new Instruction(Operator.getEnum(operator.toString()), firstOperand));
+            } else {
+                undoFlag = false;
             }
         }
-
     }
 
-    private void clearStacks() {
+    public void clearStacks() {
         valueStack.clear();
         instructionStack.clear();
     }
 
     /**
-     * Evaluate a RPN expression and pushes the result into the valueStack
+     * undo the last operation
      *
-     * @param input             valid RPN expression
-     * @param isUndoOperation   indicates if the operation is an undo operation
-     * @throws CalculatorException
+     * @throws CalculatorException      CalculatorException
+     * @throws ParseException           ParseException
      */
-    public void evaluate(String input, boolean isUndoOperation) throws CalculatorException {
-        if (StringUtils.isBlank(input)) {
-            throw new CalculatorException("Input cannot be null.");
-        }
-        currentTokenIndex = 0;
-        for (String s : input.split(input)) {
-            currentTokenIndex++;
-            processToken(s, isUndoOperation);
-        }
-    }
-
-    private void undoLastInstruction() throws CalculatorException {
+    private void undoLastInstruction() throws CalculatorException, ParseException {
         if (instructionStack.isEmpty()) {
-            throw new CalculatorException("no operations to undo");
+            return;
         }
         Instruction lastInstruction = instructionStack.pop();
-        if (null == lastInstruction) {
+        if (lastInstruction == null) {
             valueStack.pop();
         } else {
-            evaluate(lastInstruction.getReverseInstruction(), true);
+            evaluate(lastInstruction.getReverseInstruction());
         }
     }
 
     public String getValueStack() {
-        DecimalFormat fmt = new DecimalFormat("0.#########");
+        DecimalFormat fmt = new DecimalFormat("0.##########");
         fmt.setRoundingMode(RoundingMode.FLOOR);
         StringBuilder sb = new StringBuilder("stack: ");
         for (Double value: valueStack) {
@@ -138,5 +129,15 @@ public class Calculator {
         return sb.toString().trim();
     }
 
+    public String getCurrentResultWithExpression(String inputExpression) {
+        try {
+            evaluate(inputExpression);
+        } catch (CalculatorException e) {
+            return e.getMessage() + "\n" + getValueStack();
+        } catch (NullPointerException | ParseException e) {
+            return e.getMessage();
+        }
+        return getValueStack();
+    }
 
 }

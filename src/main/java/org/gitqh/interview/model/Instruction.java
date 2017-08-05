@@ -1,7 +1,8 @@
-package org.gitqh.interview.operation;
+package org.gitqh.interview.model;
 
 import lombok.AllArgsConstructor;
 import org.gitqh.interview.exception.CalculatorException;
+import org.gitqh.interview.operation.Operator;
 
 /**
  * Created by gitqh on 05/08/2017.
@@ -18,6 +19,6 @@ public class Instruction {
 
         return (operator.getOperandsNumber() < 2) ?
         String.format("%s", operator.getOpposite()) :
-                String.format("%f %s %f", value, operator.getOpposite());
+                String.format("%f %s %f", value, operator.getOpposite(), value);
     }
 }
