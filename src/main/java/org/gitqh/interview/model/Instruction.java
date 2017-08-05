@@ -18,7 +18,7 @@ public class Instruction {
         }
 
         return (operator.getOperandsNumber() < 2) ?
-        String.format("%s", operator.getOpposite()) :
+                String.format("%s", operator.getOpposite()) :
                 String.format("%f %s %f", value, operator.getOpposite(), value);
     }
 }
